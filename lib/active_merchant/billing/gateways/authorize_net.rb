@@ -104,7 +104,7 @@ module ActiveMerchant #:nodoc:
         post = {}
         add_invoice(post, options)
         # allow for checks
-        #add_creditcard(post, creditcard)
+        # add_creditcard(post, creditcard)
         add_payment_source(post, creditcard, options)
         add_address(post, options)
         add_customer_data(post, options)
@@ -337,10 +337,10 @@ module ActiveMerchant #:nodoc:
         post[:bank_acct_type] = check.account_type
 
         # The name on the customer's Checking Account
-        post[:bank_acct_name] = check.name.truncate(50)
+        post[:bank_acct_name] = check.name[0..50]
 
         # The name of the bank that holds the customer’s account, Up to 50 characters
-        post[:bank_name] = check.bank_name.truncate(50)
+        post[:bank_name] = check.bank_name[0..50]
       
         # The type of electronic check transaction
         post[:echeck_type] = check.account_type == "BUSINESSCHECKING" ? "CCD" : "WEB"
