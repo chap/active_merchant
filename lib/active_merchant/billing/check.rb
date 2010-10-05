@@ -9,26 +9,17 @@ module ActiveMerchant #:nodoc:
     class Check
       include Validateable
       
-      attr_accessor :first_name, :last_name, :routing_number, :account_number, :account_holder_type, :account_type, :number
+      attr_accessor :first_name, :last_name, :routing_number, :account_number, :account_holder_type, :account_type, :number, :bank_name
       
       # Used for Canadian bank accounts
       attr_accessor :institution_number, :transit_number
-      
+            
       def name
-        @name ||= "#{@first_name} #{@last_name}".strip
-      end
-      
-      def name=(value)
-        return if value.blank?
-
-        @name = value
-        segments = value.split(' ')
-        @last_name = segments.pop
-        @first_name = segments.join(' ')
+        "#{@first_name} #{@last_name}"
       end
       
       def validate
-        [:name, :routing_number, :account_number].each do |attr|
+        [:name, :routing_number, :account_number, :account_type, :bank_name].each do |attr|
           errors.add(attr, "cannot be empty") if self.send(attr).blank?
         end
         
@@ -37,8 +28,8 @@ module ActiveMerchant #:nodoc:
         errors.add(:account_holder_type, "must be personal or business") if
             !account_holder_type.blank? && !%w[business personal].include?(account_holder_type.to_s)
         
-        errors.add(:account_type, "must be checking or savings") if
-            !account_type.blank? && !%w[checking savings].include?(account_type.to_s)
+        errors.add(:account_type, "must be business or personal checking") if
+            !account_type.blank? && !%w[CHECKING BUSINESSCHECKING].include?(account_type.to_s)
       end
       
       def type

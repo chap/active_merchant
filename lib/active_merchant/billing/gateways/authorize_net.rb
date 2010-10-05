@@ -103,7 +103,9 @@ module ActiveMerchant #:nodoc:
       def purchase(money, creditcard, options = {})
         post = {}
         add_invoice(post, options)
-        add_creditcard(post, creditcard)
+        # allow for checks
+        #add_creditcard(post, creditcard)
+        add_payment_source(post, creditcard, options)
         add_address(post, options)
         add_customer_data(post, options)
         add_duplicate_window(post)
@@ -299,6 +301,13 @@ module ActiveMerchant #:nodoc:
         post[:invoice_num] = options[:order_id]
         post[:description] = options[:description]
       end
+      
+      def add_payment_source(params, source, options={})
+        case determine_funding_source(source)
+          when :credit_card then add_creditcard(params, source)
+          when :check       then add_check(params, source)
+        end
+      end
 
       def add_creditcard(post, creditcard)
         post[:card_num]   = creditcard.number
@@ -306,6 +315,45 @@ module ActiveMerchant #:nodoc:
         post[:exp_date]   = expdate(creditcard)
         post[:first_name] = creditcard.first_name
         post[:last_name]  = creditcard.last_name
+      end
+
+      def add_check(post, check)
+        # http://developer.authorize.net/guides/AIM/eCheck_Developer_Guide/eCheck.Net_Developer_Guide.htm
+
+        # The payment method,ECHECK,The method
+        # of payment for the transaction, in this case ECHECK (electronic check).
+        # If left blank, this value will default to CC.
+        post[:method] = 'ECHECK'
+
+        # The valid routing number of the customer’s bank, 9 digits
+        post[:bank_aba_code] = check.routing_number
+
+        # The customer’s
+        # valid bank account number, Up to 20 digits, The customer’s checking,
+        # business checking or savings bank account number.
+        post[:bank_acct_num] = check.account_number
+
+        # The type of bank account: CHECKING, BUSINESSCHECKING, SAVINGS
+        post[:bank_acct_type] = check.account_type
+
+        # The name on the customer's Checking Account
+        post[:bank_acct_name] = check.name.truncate(50)
+
+        # The name of the bank that holds the customer’s account, Up to 50 characters
+        post[:bank_name] = check.bank_name.truncate(50)
+      
+        # The type of electronic check transaction
+        post[:echeck_type] = check.account_type == "BUSINESSCHECKING" ? "CCD" : "WEB"
+      end
+
+      def determine_funding_source(source)
+        case
+          when source.class == ActiveMerchant::Billing::CreditCard
+            then :credit_card
+          when source.class == ActiveMerchant::Billing::Check
+            then :check
+          else raise ArgumentError, "Unsupported funding sourceprovided"
+        end
       end
 
       def add_customer_data(post, options)
