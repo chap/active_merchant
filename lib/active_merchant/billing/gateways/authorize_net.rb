@@ -344,6 +344,9 @@ module ActiveMerchant #:nodoc:
       
         # The type of electronic check transaction
         post[:echeck_type] = check.account_type == "BUSINESSCHECKING" ? "CCD" : "WEB"
+
+        post[:first_name] = check.first_name
+        post[:last_name]  = check.last_name
       end
 
       def determine_funding_source(source)
